@@ -1,1 +1,1 @@
-workerL python bet_bot.py
+worker: python bet_bot.py

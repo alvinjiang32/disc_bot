@@ -1,98 +1,196 @@
 import discord
 import os
-import sqlite3
 import atexit
+import datetime
+import asyncio
+from threading import Thread
+import pymongo
+from pymongo import MongoClient
 from dotenv import load_dotenv
 
-client = discord.Client()
-load_dotenv()
 
-@client.event
-async def on_connect():
-    print('Successfully Connected')
+class BettingBot(discord.Client):
 
-@client.event
-async def on_message(msg):
-    if msg.author == client.user:
-        return
+    def __init__(self):
+        discord.Client.__init__(self)
+        load_dotenv()
+        self.mdb_client = MongoClient(os.getenv('MDB_TOKEN'))
+        self.db = self.mdb_client.test_disc
+        self.collection = self.db.test_collection
 
-    # format: !bet {$$$$$} {Bet condition} => Return msg if bet is successful
-    if msg.content.startswith('!bet'):
-        args = msg.content.split()
-        print(args)
+        self.loop = asyncio.get_event_loop()
+        self.loop.create_task(self.start(os.getenv('TOKEN')))
+        self.loop.run_forever()
 
-        if len(args) != 3:
+    async def on_connect(self):
+        print('Connected to Discord')
+
+    async def on_message(self, msg):
+        if msg.author == self.user:
             return
-        else:
-            print(args)
-            amt = args[1]
-            bet = args[2]
 
-            # Check if balance > bet
-            balance = ...
+        user = msg.author
 
-            if amt > balance:
-                await msg.channel.send(
-                    'Insufficient Fund: {}'.format(balance))
+        if msg.content.lower() == '!create wallet':
+            entry = self.collection.find_one({'_id': user.id})
+            if entry:
+                res = 'wallet already exists!'
             else:
-                await msg.channel.send('Your bet for {} currency has '
-                                       'successfully been placed: {}'
-                                       .format(amt, bet))
-                # subtract funds from user, store bet
+                new_user = {
+                    "username": ''.join(user.name).lower(),
+                    # + user.discriminator,
+                    "alias": user.nick,
+                    "_id": user.id,
+                    "balance": 100,
+                    "active_bets": [],
+                    "prev_bets": [],
+                    "last_bonus": datetime.datetime.utcnow()
+                }
+                self.collection.insert_one(new_user)
+                res = "Welcome {}!\nYour starting balance is 100 Trobucks" \
+                    .format(user.name)
+            await msg.channel.send(res)
 
-    # format: !balance => returns users balance
-    if msg.content == '!balance':
-        user = hash(msg.author)
-        # connect to database
-        # query database using hash
+        # format: !bet {$$$$$} {DURATION in hours} {BET}
+        if msg.content.startswith('!bet'):
+            args = msg.content.split()
 
-        res = ...
-        # return balance to discord channel
-        await msg.channel.send()
+            if len(args) < 4:
+                return
+            else:
+                try:
+                    amt = int(args[1])
+                    duration = int(args[2])
+                    bet = ' '.join(args[3:])
+                except ValueError:
+                    return
 
-    if msg.content.startswith('!transfer'):
-        sender = hash(msg.author)
+                # Check if balance > bet
+                entry = self.collection.find_one({'_id': user.id})
+                if not entry:
+                    return
 
-        # get next 2 args
+                balance = entry['balance']
+                if amt > balance:
+                    res = 'You\'re too poor bro: {} trobucks'.format(balance)
+                else:
+                    self.collection.update_one(entry,
+                        {
+                            "$push": {"active_bets": {
+                                datetime.datetime.utcnow()
+                                + datetime.timedelta(hours=duration): bet}},
+                            "$set": {"balance": balance - amt}
+                        })
+                    res = 'Your bet has been placed:' \
+                          '\n{}\n{} Trobucks'.format(amt, bet)
+            await msg.channel.send(res)
 
-        # check if first arg is valid user
-        receivee = ...
-        # check if second arg is valid int
-        transfer_amt = ...
-        # check if balance of sender is > transfer amt... DB query
+        # format: !balance
+        if msg.content == '!balance':
+            balance = None
 
-        # return true if valid amt, false if neg balance
+            # query database using hash
+            query = self.collection.find_one(user.id)
+            if query:
+                balance = query['balance']
+                res = "{}'s balance: {} Trobucks".format(user.name,
+                                                         balance)
+                # return balance to discord channel
+                await msg.channel.send(res)
 
-    if msg.content.startswith('!bonus'):
-        # claim daily login bonus
+        # format: !transfer {AMOUNT} {RECEIVER_NAME}
+        if msg.content.startswith('!transfer'):
+            # get next 2 args
+            sender = self.collection.find_one(user.id)
+            args = msg.content.split()
+            if len(args) != 3:
+                return
+            else:
+                try:
+                    amt = int(args[1])
+                except ValueError:
+                    return
+
+                rcvr = ''.join(args[2:])
+                # check if first arg is valid user
+                receiver = self.collection.find_one({"username": rcvr})
+                if not receiver:
+                    return
+                # check if balance of sender is > transfer amt... DB query
+                if sender['balance'] < amt:
+                    res = 'Insufficient Funds: {}'.format(sender['balance'])
+                else:
+                    self.collection.update_one(receiver,
+                           {
+                               '$set': {'balance': receiver['balance'] + amt}
+                           })
+                    self.collection.update_one(sender,
+                        {
+                            '$set': {'balance': sender['balance'] - amt}
+                        })
+
+                    sender = self.collection.find_one(user.id)
+                    receiver = self.collection.find_one({"username": rcvr})
+                    res = 'Transfer Successful!\n\n{}\'s balance: {}\n{}\'s ' \
+                          'balance: {}'.format(sender['username'], sender[
+                        'balance'], receiver['username'], receiver['balance'])
+            # return true if valid amt, false if neg balance
+            await msg.channel.send(res)
+
+        # format: !leaderboards
+        if msg.content.startswith('!leaderboards'):
+            ldrs = ['{}. {}: {}'.format(i, user['username'], user['balance'])
+                    for i, user in enumerate(self.collection.find().sort(
+                        'balance', pymongo.DESCENDING), 1)]
+
+            await msg.channel.send('Rankings\n\n' + '\n'.join(ldrs))
+
+        # format: !bonus
+        if msg.content == '!bonus':
+            entry = self.collection.find_one(user.id)
+            if not entry:
+                return
+
+            prev = entry['last_bonus']
+            now = datetime.datetime.utcnow()
+            if now - prev > datetime.timedelta(hours=24):
+                self.collection.update_one(entry,
+                    {
+                        '$set': {'balance': entry['balance'] + 10,
+                        'last_bonus': datetime.datetime.utcnow()}
+                    })
+
+                entry = self.collection.find_one(user.id)
+                rsp = '{} updated balance: {} Trobucks'.\
+                    format(entry['username'], entry['balance'])
+            else:
+                diff = str(datetime.timedelta(hours=24) - (now - prev))
+                units = diff.split(':')
+
+                rsp = '{} hrs, {} minutes, and {} seconds until your bonus ' \
+                      'is available again'.format(units[0], units[1], units[2])
+            await msg.channel.send(rsp)
+
+        # format: !help
+        if msg.content == '!help':
+            rsp = 'List Of Commands:\n\n' \
+                  'To create a wallet\n```!create wallet```\n' \
+                  'To create a new bet\n```!bet {AMOUNT} {' \
+                  'DURATION_IN_HOURS} {BET_DETAILS}```\n' \
+                  'To transfers funds to another user\n```!transfer {' \
+                  'AMOUNT} {RECEIVERS_DISCORD_NAME}```\n' \
+                  'To get your balance\n```!balance```\n' \
+                  'To get your bonus\n```!bonus```\n' \
+                  'To get the leaderboard rankings\n```!leaderboards```\n'
+            await msg.channel.send(rsp)
+
+    async def check_bets(self):
         pass
-
-def create_connection(db_file):
-    """
-        Creates connection to database specified in argument
-
-        :param db_file: (String) DB file name to connect to
-        :return: Connection obj or None
-    """
-    conn = None
-    try:
-        conn = sqlite3.connect(db_file)
-
-    except sqlite3.Error as err:
-        print(err)
-
-    return conn
-
-
-connection = create_connection(os.getenv('DB'))
-if not connection:
-    print('Connection failed to Database: {}'.format())
-    exit()
-
-client.run(os.getenv('TOKEN'))
 
 @atexit.register
 def close_connection():
-    print('Terminating Connection...\nSaving Changes...')
-    connection.close()
+    print('Terminating Connection...')
 
+
+if __name__ == '__main__':
+    bot = BettingBot()
