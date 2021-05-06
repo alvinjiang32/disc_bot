@@ -78,9 +78,9 @@ class BettingBot(discord.Client):
                 else:
                     self.collection.update_one(entry,
                         {
-                            "$push": {"active_bets": {
+                            "$push": {"active_bets": {bet:
                                 datetime.datetime.utcnow()
-                                + datetime.timedelta(hours=duration): bet}},
+                                + datetime.timedelta(hours=duration)}},
                             "$set": {"balance": balance - amt}
                         })
                     res = '**Your bet has been placed**:' \
@@ -88,7 +88,7 @@ class BettingBot(discord.Client):
             await msg.channel.send(res)
 
         # format: !balance
-        if msg.content == '!balance':
+        if msg.content.lower() == '!balance':
             balance = None
 
             # query database using hash
@@ -141,7 +141,7 @@ class BettingBot(discord.Client):
             await msg.channel.send(res)
 
         # format: !leaderboards
-        if msg.content.startswith('!leaderboards'):
+        if msg.content.lower == '!leaderboards':
             ldrs = ['{}. {}: {}'.format(i, user['username'], user['balance'])
                     for i, user in enumerate(self.collection.find().sort(
                         'balance', pymongo.DESCENDING), 1)]
@@ -149,7 +149,7 @@ class BettingBot(discord.Client):
             await msg.channel.send('Rankings\n\n' + '\n'.join(ldrs))
 
         # format: !bonus
-        if msg.content == '!bonus':
+        if msg.content.lower() == '!bonus':
             entry = self.collection.find_one(user.id)
             if not entry:
                 return
@@ -175,8 +175,21 @@ class BettingBot(discord.Client):
                                                         units[2])
             await msg.channel.send(rsp)
 
+        # format: !check bets
+        if msg.content.lower() == '!check bets':
+            entry = self.collection.find_one(user.id)
+            active_bets = [bet for pair in entry['active_bets'] for bet in
+                           pair]
+            prev_bets = [bet for pair in entry['prev_bets'] for bet in pair]
+
+            rsp = '__*{}\'s bets*__:\n\n**Active**:\n{' \
+                  '}\n\n**Previous**:\n\n{}'\
+                .format(user.name, '\n'.join(active_bets), '\n'.join(
+                 prev_bets))
+            await msg.channel.send(rsp)
+
         # format: !help
-        if msg.content == '!help':
+        if msg.content.lower() == '!help':
             rsp = '**Supported Commands**:\n\n' \
                   'To create a wallet\n```!create wallet```\n' \
                   'To create a new bet\n```!bet {AMOUNT} {' \

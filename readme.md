@@ -14,8 +14,8 @@ This bot will use python and will be hosted for free on Heroku.
 * View Balance
 * Get bonuses
 * Help menu
+* View all previous bets
 
 #### To Do
 * View personal active and previous bets
 * Update bet statuses/transaction of successful bet
-* View all previous bets
