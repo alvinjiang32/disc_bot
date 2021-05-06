@@ -19,3 +19,6 @@ This bot will use python and will be hosted for free on Heroku.
 #### To Do
 * View personal active and previous bets
 * Update bet statuses/transaction of successful bet
+
+### Records:
+#### Bets => ['BET DETAILS', 'BET AMOUNT', 'DATE OF EXPIRY']

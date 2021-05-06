@@ -4,6 +4,7 @@ import atexit
 import datetime
 import asyncio
 from threading import Thread
+import threading
 import pymongo
 from pymongo import MongoClient
 from dotenv import load_dotenv
@@ -78,20 +79,20 @@ class BettingBot(discord.Client):
                 else:
                     self.collection.update_one(entry,
                         {
-                            "$push": {"active_bets": {bet:
+                            "$push": {"active_bets": (bet, amt,
                                 datetime.datetime.utcnow()
-                                + datetime.timedelta(hours=duration)}},
+                                + datetime.timedelta(hours=duration))},
                             "$set": {"balance": balance - amt}
                         })
                     res = '**Your bet has been placed**:' \
-                          '\n{}\n{} Trobucks'.format(amt, bet)
+                          '\n{} Trobucks\n{}'.format(amt, bet)
             await msg.channel.send(res)
 
         # format: !balance
         if msg.content.lower() == '!balance':
             balance = None
 
-            # query database using hash
+            # query database using id
             query = self.collection.find_one(user.id)
             if query:
                 balance = query['balance']
@@ -118,7 +119,7 @@ class BettingBot(discord.Client):
                 receiver = self.collection.find_one({"username": rcvr})
                 if not receiver:
                     return
-                # check if balance of sender is > transfer amt... DB query
+                # check if balance of sender is > transfer amt
                 if sender['balance'] < amt:
                     res = '**Insufficient Funds**: {}'.format(sender[
                                                                   'balance'])
@@ -137,7 +138,7 @@ class BettingBot(discord.Client):
                     res = '**Transfer Successful!**\n\n{}\'s balance: {}\n{' \
                           '}\'s balance: {}'.format(sender['username'], sender[
                         'balance'], receiver['username'], receiver['balance'])
-            # return true if valid amt, false if neg balance
+
             await msg.channel.send(res)
 
         # format: !leaderboards
@@ -178,14 +179,27 @@ class BettingBot(discord.Client):
         # format: !check bets
         if msg.content.lower() == '!check bets':
             entry = self.collection.find_one(user.id)
-            active_bets = [bet for pair in entry['active_bets'] for bet in
-                           pair]
-            prev_bets = [bet for pair in entry['prev_bets'] for bet in pair]
+            active_bets = []
+            prev_bets = []
 
-            rsp = '__*{}\'s bets*__:\n\n**Active**:\n{' \
-                  '}\n\n**Previous**:\n\n{}'\
+            for i, bet in enumerate(entry['active_bets'], 1):
+                fmt_msg = 'Bet {}:\n```Details: {}\nAmount: {} Trobucks\nExpiry ' \
+                          'Date: {}```'.\
+                    format(i, bet[0], bet[1], bet[2].
+                           strftime("%m/%d/%y @ %I:%M %p"))
+                active_bets.append(fmt_msg)
+
+            for i, bet in enumerate(entry['prev_bets'], 1):
+                fmt_msg = 'Bet {}: \n```Details: {}\nAmount: {} ' \
+                          'Trobucks\nExpiry Date: {}```'.\
+                    format(i, bet[0], bet[1], bet[2].
+                           strftime("%m/%d/%y @ %I:%M %p"))
+                active_bets.append(fmt_msg)
+
+            rsp = '__*{}\'s bets*__:\n**Active**:\n{}\n\n**Previous**:\n{}'\
                 .format(user.name, '\n'.join(active_bets), '\n'.join(
                  prev_bets))
+
             await msg.channel.send(rsp)
 
         # format: !help
