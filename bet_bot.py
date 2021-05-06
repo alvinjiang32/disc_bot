@@ -34,7 +34,7 @@ class BettingBot(discord.Client):
         if msg.content.lower() == '!create wallet':
             entry = self.collection.find_one({'_id': user.id})
             if entry:
-                res = 'wallet already exists!'
+                res = '**wallet already exists**!'
             else:
                 new_user = {
                     "username": ''.join(user.name).lower(),
@@ -47,7 +47,8 @@ class BettingBot(discord.Client):
                     "last_bonus": datetime.datetime.utcnow()
                 }
                 self.collection.insert_one(new_user)
-                res = "Welcome {}!\nYour starting balance is 100 Trobucks" \
+                res = "Welcome {}!\n**Your starting balance is 100 " \
+                      "Trobucks**" \
                     .format(user.name)
             await msg.channel.send(res)
 
@@ -72,7 +73,8 @@ class BettingBot(discord.Client):
 
                 balance = entry['balance']
                 if amt > balance:
-                    res = 'You\'re too poor bro: {} trobucks'.format(balance)
+                    res = '**You\'re too poor bro**: {} trobucks'.format(
+                        balance)
                 else:
                     self.collection.update_one(entry,
                         {
@@ -81,7 +83,7 @@ class BettingBot(discord.Client):
                                 + datetime.timedelta(hours=duration): bet}},
                             "$set": {"balance": balance - amt}
                         })
-                    res = 'Your bet has been placed:' \
+                    res = '**Your bet has been placed**:' \
                           '\n{}\n{} Trobucks'.format(amt, bet)
             await msg.channel.send(res)
 
@@ -93,7 +95,7 @@ class BettingBot(discord.Client):
             query = self.collection.find_one(user.id)
             if query:
                 balance = query['balance']
-                res = "{}'s balance: {} Trobucks".format(user.name,
+                res = "**{}'s balance**: {} Trobucks".format(user.name,
                                                          balance)
                 # return balance to discord channel
                 await msg.channel.send(res)
@@ -118,7 +120,8 @@ class BettingBot(discord.Client):
                     return
                 # check if balance of sender is > transfer amt... DB query
                 if sender['balance'] < amt:
-                    res = 'Insufficient Funds: {}'.format(sender['balance'])
+                    res = '**Insufficient Funds**: {}'.format(sender[
+                                                                  'balance'])
                 else:
                     self.collection.update_one(receiver,
                            {
@@ -131,8 +134,8 @@ class BettingBot(discord.Client):
 
                     sender = self.collection.find_one(user.id)
                     receiver = self.collection.find_one({"username": rcvr})
-                    res = 'Transfer Successful!\n\n{}\'s balance: {}\n{}\'s ' \
-                          'balance: {}'.format(sender['username'], sender[
+                    res = '**Transfer Successful!**\n\n{}\'s balance: {}\n{' \
+                          '}\'s balance: {}'.format(sender['username'], sender[
                         'balance'], receiver['username'], receiver['balance'])
             # return true if valid amt, false if neg balance
             await msg.channel.send(res)
@@ -167,13 +170,14 @@ class BettingBot(discord.Client):
                 diff = str(datetime.timedelta(hours=24) - (now - prev))
                 units = diff.split(':')
 
-                rsp = '{} hrs, {} minutes, and {} seconds until your bonus ' \
-                      'is available again'.format(units[0], units[1], units[2])
+                rsp = '**{} hrs, {} minutes, and {} seconds** until your ' \
+                      'bonus is available again'.format(units[0], units[1],
+                                                        units[2])
             await msg.channel.send(rsp)
 
         # format: !help
         if msg.content == '!help':
-            rsp = 'List Of Commands:\n\n' \
+            rsp = '**Supported Commands**:\n\n' \
                   'To create a wallet\n```!create wallet```\n' \
                   'To create a new bet\n```!bet {AMOUNT} {' \
                   'DURATION_IN_HOURS} {BET_DETAILS}```\n' \
