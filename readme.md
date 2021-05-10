@@ -18,11 +18,13 @@ This bot will use python and will be hosted for free on Heroku and MongoDB.
 - [x] View personal active and previous bets
 
 #### To Do
-- [ ] Update bet statuses/transaction of successful bet
-- [ ] Create job to remove expired bets
 - [ ] Design transaction flow for won bet
 - [ ] Implement transaction flow for won bet
+- [ ] Update bet statuses/transaction of successful bet
+- [ ] Create job to remove expired bets
 - [ ] Change architecture to microservices (one for listening to users, one for automatically removing expired bets, ...)
+- [ ] Implement threading LOL
+- [ ] Store ALL bets into separate MDB collection
 
 ### __Records__
 **Key**   | **Value**  
