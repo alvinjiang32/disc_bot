@@ -3,22 +3,28 @@
 ## Overview
 This bot will be used on the Discord server to track bets by users and provide them with the ability to create bets, delete bets, and update bets.
 </br></br>
-This bot will use python and will be hosted for free on Heroku.
+This bot will use python and will be hosted for free on Heroku and MongoDB.
 
-### Features
+### __Features__
 #### Done
-* Ability to create a wallet
-* Place a bet
-* Transfer funds
-* View Leaderboard
-* View Balance
-* Get bonuses
-* Help menu
-* View all previous bets
+- [x] Ability to create a wallet
+- [x] Place a bet
+- [x] Transfer funds
+- [x] View Leaderboard
+- [x] View Balance
+- [x] Get bonuses
+- [x] Help menu
+- [x] View all previous bets
+- [x] View personal active and previous bets
 
 #### To Do
-* View personal active and previous bets
-* Update bet statuses/transaction of successful bet
+- [ ] Update bet statuses/transaction of successful bet
+- [ ] Create job to remove expired bets
+- [ ] Design transaction flow for won bet
+- [ ] Implement transaction flow for won bet
+- [ ] Change architecture to microservices (one for listening to users, one for automatically removing expired bets, ...)
 
-### Records:
-#### Bets => ['BET DETAILS', 'BET AMOUNT', 'DATE OF EXPIRY']
+### __Records__
+**Key**   | **Value**  
+-----     | ------
+Bets      | <BET_ DETAILS, BET_AMOUNT, EXPIRATION>
