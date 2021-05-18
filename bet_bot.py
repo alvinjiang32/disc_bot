@@ -83,14 +83,14 @@ class BettingBot(discord.Client):
 
         for i, bet in enumerate(entry['active_bets'], 1):
             fmt_msg = '__Bet {}__:```Details: {}\nAmount: {} ' \
-                      'Trobucks\nExpiration: {}```'. \
+                      'Burrys\nExpiration: {}```'. \
                 format(i, bet[0], bet[1], bet[2].
                        strftime("%m/%d/%y @ %I:%M %p"))
             active_bets.append(fmt_msg)
 
         for i, bet in enumerate(entry['prev_bets'], 1):
             fmt_msg = '__Bet {}__:```Details: {}\nAmount: {} ' \
-                      'Trobucks\nExpiration: {}```'. \
+                      'Burrys\nExpiration: {}```'. \
                 format(i, bet[0], bet[1], bet[2].
                        strftime("%m/%d/%y @ %I:%M %p"))
             active_bets.append(fmt_msg)
@@ -117,7 +117,7 @@ class BettingBot(discord.Client):
                })
 
             entry = self.collection.find_one(user.id)
-            rsp = '```{} updated balance: {} Trobucks```'. \
+            rsp = '```{} updated balance: {} Burrys```'. \
                 format(entry['username'], entry['balance'])
         else:
             diff = str(datetime.timedelta(hours=24) - (now - prev))
@@ -194,7 +194,7 @@ class BettingBot(discord.Client):
 
             balance = entry['balance']
             if amt > balance:
-                res = '**You\'re too poor bro**: {} trobucks'.format(
+                res = '**You\'re too poor bro**: {} Burrys'.format(
                     balance)
             else:
                 self.collection.update_one(entry,
@@ -208,7 +208,7 @@ class BettingBot(discord.Client):
                            "balance": balance - amt}
                    })
                 res = '**Your bet has been placed**:' \
-                      '\n```{} Trobucks\n{}```'.format(amt, bet)
+                      '\n```{} Burrys\n{}```'.format(amt, bet)
         await msg.channel.send(res)
 
     async def get_balance(self, user, msg):
@@ -218,7 +218,7 @@ class BettingBot(discord.Client):
         query = self.collection.find_one(user.id)
         if query:
             balance = query['balance']
-            res = "```{}'s balance: {} Trobucks```".format(user.name,
+            res = "```{}'s balance: {} Burrys```".format(user.name,
                                                            balance)
             # return balance to discord channel
             await msg.channel.send(res)
@@ -240,7 +240,7 @@ class BettingBot(discord.Client):
             }
             self.collection.insert_one(new_user)
             res = "Welcome {}!\n**Your starting balance is 100 " \
-                  "Trobucks**" \
+                  "Burrys**" \
                 .format(user.name)
         await msg.channel.send(res)
 
