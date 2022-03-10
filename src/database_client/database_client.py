@@ -12,9 +12,9 @@ class DatabaseClient:
     def __init__(self, token, db_name, collection_name):
         self.client = MongoClient(token)
         # TODO update collection in Heroku
-        self.collection = self.client.get_database(db_name)
+        self.database = self.client.get_database(db_name)
         # TODO update database in Heroku
-        self.database = self.collection.get_collection(collection_name)
+        self.collection = self.collection.get_collection(collection_name)
 
     async def get_all_bets(self, user, msg):
         entry = self.collection.find_one(user.id)
