@@ -1,11 +1,11 @@
 from pymongo import MongoClient
-from database_utils import get_bets
-from database_utils import check_bonus
-from database_utils import fetch_leaderboard
-from database_utils import attempt_transfer
-from database_utils import initiate_bet
-from database_utils import fetch_balance
-from database_utils import initialize_wallet
+from src.database_client.database_utils import get_bets
+from src.database_client.database_utils import check_bonus
+from src.database_client.database_utils import fetch_leaderboard
+from src.database_client.database_utils import attempt_transfer
+from src.database_client.database_utils import initiate_bet
+from src.database_client.database_utils import fetch_balance
+from src.database_client.database_utils import initialize_wallet
 
 
 class DatabaseClient:
