@@ -14,7 +14,7 @@ class DatabaseClient:
         # TODO update collection in Heroku
         self.database = self.client.get_database(db_name)
         # TODO update database in Heroku
-        self.collection = self.collection.get_collection(collection_name)
+        self.collection = self.database.get_collection(collection_name)
 
     async def get_all_bets(self, user, msg):
         entry = self.collection.find_one(user.id)
