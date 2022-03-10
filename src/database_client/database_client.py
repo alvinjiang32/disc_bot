@@ -33,7 +33,7 @@ class DatabaseClient:
         rsp = check_bonus(entry, user, self.collection)
         await msg.channel.send(rsp)
 
-    async def get_leaderboard(self, msg):
+    async def get_leaderboard(self, user, msg):
         rsp = 'Rankings\n\n\n' + fetch_leaderboard(self.collection).join()
         await msg.channel.send(rsp)
 

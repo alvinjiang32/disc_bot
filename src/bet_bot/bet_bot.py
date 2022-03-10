@@ -43,8 +43,8 @@ class BettingBot(discord.Client):
             await self.mdb_client.transfer_to(user, msg)
 
         # format: !leaderboards
-        elif msg.content.lower == '!leaderboards':
-            await self.mdb_client.get_leaderboard(msg)
+        elif msg.content.lower == '!leaderboard':
+            await self.mdb_client.get_leaderboard(user, msg)
 
         # format: !bonus
         elif msg.content.lower() == '!bonus':
